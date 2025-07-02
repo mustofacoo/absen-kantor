@@ -703,14 +703,14 @@
 
     <script>
         // Firebase Configuration
-   const firebaseConfig = {
-  apiKey: "AIzaSyAamWrTzRdt38MOFukaJw8K5blCLRgvwpk",
-  authDomain: "absen-kantor-d2674.firebaseapp.com",
-  projectId: "absen-kantor-d2674",
-  storageBucket: "absen-kantor-d2674.firebasestorage.app",
-  messagingSenderId: "496840466428",
-  appId: "1:496840466428:web:6bac914d479f4a14cd5c79"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyDdCvdJrthzS07BkAQagNAadWvV3PcNnDk",
+            authDomain: "amall-yaumi.firebaseapp.com",
+            projectId: "amall-yaumi",
+            storageBucket: "amall-yaumi.firebasestorage.app",
+            messagingSenderId: "743065908741",
+            appId: "1:743065908741:web:5551c8cdb47a3edac58e6c"
+        };
 
         // Global Variables
         let currentUser = null;
@@ -719,10 +719,20 @@
         let userLocation = null;
         let todayAttendance = null;
 
+        // Admin emails - tambahkan email Anda di sini
+        const ADMIN_EMAILS = [
+            'khazanahimani@gmail.com',
+            'admin@admin.com', 
+            'hr@perusahaan.com',
+            'manager@perusahaan.com',
+            // TAMBAHKAN EMAIL ANDA DI SINI:
+            'your-email@gmail.com'  // Ganti dengan email Anda
+        ];
+
         // Office Location (Example: Jakarta office coordinates)
         const OFFICE_LOCATION = {
-            latitude: -8.16254713814244,
-            longitude: 113.70746164113169,
+            latitude: -6.2088,
+            longitude: 106.8456,
             radius: 500 // meters
         };
 
@@ -833,23 +843,34 @@
                     document.getElementById('currentUserName').textContent = userData.name || currentUser.email;
                     
                 } else {
-                    // If user doesn't exist in users collection, check if email is admin
-                    isAdmin = currentUser.email.includes('admin');
+                    // Auto-detect admin by email patterns or specific emails
+                    isAdmin = ADMIN_EMAILS.includes(currentUser.email) ||
+                             currentUser.email.includes('admin') || 
+                             currentUser.email.includes('hr') ||
+                             currentUser.email.includes('manager');
                     
-                    // Create user profile
+                    // Create user profile automatically
                     await db.collection('users').doc(currentUser.uid).set({
                         email: currentUser.email,
                         name: currentUser.displayName || currentUser.email.split('@')[0],
                         role: isAdmin ? 'admin' : 'employee',
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
+                    
+                    console.log(`✅ Created user profile - Role: ${isAdmin ? 'admin' : 'employee'}`);
                 }
                 
+                console.log(`👤 User loaded - Admin: ${isAdmin}, Email: ${currentUser.email}`);
                 updateUIForAuth();
                 
             } catch (error) {
                 console.error('Error loading user profile:', error);
-                isAdmin = currentUser.email.includes('admin');
+                
+                // Fallback admin detection
+                isAdmin = ADMIN_EMAILS.includes(currentUser.email) ||
+                         currentUser.email.includes('admin');
+                         
+                console.log(`🔄 Fallback admin detection - Result: ${isAdmin}`);
                 updateUIForAuth();
             }
         }
