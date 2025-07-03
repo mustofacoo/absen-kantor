@@ -398,13 +398,51 @@
             opacity: 0.6;
         }
 
-        /* GPS Status */
-        .gps-status {
-            background: rgba(255,255,255,0.2);
-            padding: 10px;
-            border-radius: 8px;
+        /* Export Button */
+        .export-btn {
+            background: #17a2b8;
+            color: white;
+            margin-left: 10px;
+        }
+
+        /* Quick Stats Card */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
             margin-bottom: 20px;
+        }
+
+        .quick-stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .quick-stat-number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .quick-stat-label {
             font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        /* Filter Controls */
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
 
         /* Responsive */
@@ -456,6 +494,11 @@
             .employee-actions {
                 width: 100%;
                 justify-content: flex-end;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
     </style>
@@ -512,8 +555,8 @@
                         <h4 style="color: #2c3e50; margin-bottom: 10px;">💡 Petunjuk Login:</h4>
                         <ul style="text-align: left; color: #6c757d; line-height: 1.6;">
                             <li>Gunakan email dan password yang telah diberikan admin</li>
-                            <li>Pastikan Anda berada di area kantor saat login</li>
-                            <li>Sistem akan memverifikasi lokasi Anda secara otomatis</li>
+                            <li>Sistem absensi dapat diakses dari mana saja</li>
+                            <li>Pastikan koneksi internet stabil</li>
                             <li>Hubungi admin jika mengalami kesulitan login</li>
                         </ul>
                     </div>
@@ -526,19 +569,15 @@
                     <div class="current-time" id="liveTime"></div>
                     <div class="current-date" id="liveDate"></div>
                     
-                    <div class="gps-status" id="gpsStatus">
-                        📍 Memverifikasi lokasi...
-                    </div>
-                    
                     <div class="attendance-status" id="attendanceStatus">
                         📋 Status absensi hari ini akan ditampilkan di sini
                     </div>
                     
                     <div class="attendance-buttons">
-                        <button id="checkinBtn" onclick="checkIn()" class="btn btn-success" disabled>
+                        <button id="checkinBtn" onclick="checkIn()" class="btn btn-success">
                             ⏰ Check In
                         </button>
-                        <button id="checkoutBtn" onclick="checkOut()" class="btn btn-warning" disabled>
+                        <button id="checkoutBtn" onclick="checkOut()" class="btn btn-warning">
                             🏃 Check Out
                         </button>
                     </div>
@@ -557,11 +596,36 @@
                 <div class="admin-card">
                     <h3 style="color: #2c3e50; margin-bottom: 20px;">📊 Riwayat Absensi Saya</h3>
                     
-                    <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div class="filter-controls">
                         <label for="historyMonth" style="font-weight: 600;">Filter Bulan:</label>
                         <select id="historyMonth" onchange="loadMyHistory()" class="form-input" style="width: auto; min-width: 200px;">
                         </select>
                         <button onclick="loadMyHistory()" class="btn btn-primary">🔄 Refresh</button>
+                        <button onclick="exportMyHistory()" class="btn export-btn">📥 Export Excel</button>
+                    </div>
+
+                    <!-- Quick stats for employee -->
+                    <div class="quick-stats" id="employeeQuickStats">
+                        <div class="quick-stat-item">
+                            <div class="quick-stat-number" id="employeeHadirCount">-</div>
+                            <div class="quick-stat-label">Hadir</div>
+                        </div>
+                        <div class="quick-stat-item">
+                            <div class="quick-stat-number" id="employeeTelatCount">-</div>
+                            <div class="quick-stat-label">Telat</div>
+                        </div>
+                        <div class="quick-stat-item">
+                            <div class="quick-stat-number" id="employeeAlphaCount">-</div>
+                            <div class="quick-stat-label">Alpha</div>
+                        </div>
+                        <div class="quick-stat-item">
+                            <div class="quick-stat-number" id="employeeIzinCount">-</div>
+                            <div class="quick-stat-label">Izin</div>
+                        </div>
+                        <div class="quick-stat-item">
+                            <div class="quick-stat-number" id="employeeAttendanceRate">-%</div>
+                            <div class="quick-stat-label">Tingkat Kehadiran</div>
+                        </div>
                     </div>
                     
                     <div class="history-table">
@@ -598,10 +662,12 @@
                     <div class="admin-card">
                         <h3 style="color: #2c3e50; margin-bottom: 20px;">📈 Rekap Absensi Bulanan</h3>
                         
-                        <div style="margin-bottom: 25px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <div class="filter-controls">
                             <label for="reportMonth" style="font-weight: 600;">Pilih Bulan:</label>
                             <select id="reportMonth" onchange="generateReport()" class="form-input" style="width: auto; min-width: 200px;">
                             </select>
+                            <button onclick="generateReport()" class="btn btn-primary">🔄 Refresh</button>
+                            <button onclick="exportReport()" class="btn export-btn">📥 Export Excel</button>
                         </div>
                         
                         <div class="stats-grid" id="reportStats">
@@ -628,6 +694,7 @@
                                 <thead>
                                     <tr>
                                         <th>Nama Pegawai</th>
+                                        <th>Email</th>
                                         <th>Hadir</th>
                                         <th>Telat</th>
                                         <th>Alpha</th>
@@ -637,7 +704,7 @@
                                 </thead>
                                 <tbody id="reportTableBody">
                                     <tr>
-                                        <td colspan="6" class="loading">Memuat data rekap...</td>
+                                        <td colspan="7" class="loading">Memuat data rekap...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -672,10 +739,11 @@
                 <div class="admin-card">
                     <h3 class="admin-section-title">📝 Kelola Absensi</h3>
                     
-                    <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div class="filter-controls">
                         <label for="attendanceDate" style="font-weight: 600;">Tanggal:</label>
                         <input type="date" id="attendanceDate" class="form-input" style="width: auto;">
                         <button onclick="loadAttendanceData()" class="btn btn-primary">🔍 Cari</button>
+                        <button onclick="exportDailyReport()" class="btn export-btn">📥 Export Hari Ini</button>
                     </div>
                     
                     <div class="history-table">
@@ -716,25 +784,16 @@
         let currentUser = null;
         let isAdmin = false;
         let db = null;
-        let userLocation = null;
         let todayAttendance = null;
+        let currentReportData = null;
 
-        // Admin emails - tambahkan email Anda di sini
+        // Admin emails
         const ADMIN_EMAILS = [
             'khazanahimani@gmail.com',
             'admin@admin.com', 
             'hr@perusahaan.com',
-            'manager@perusahaan.com',
-            // TAMBAHKAN EMAIL ANDA DI SINI:
-            'your-email@gmail.com'  // Ganti dengan email Anda
+            'manager@perusahaan.com'
         ];
-
-        // Office Location (Example: Jakarta office coordinates)
-        const OFFICE_LOCATION = {
-            latitude: -6.2088,
-            longitude: 106.8456,
-            radius: 500 // meters
-        };
 
         // Initialize Firebase
         function initializeFirebase() {
@@ -782,7 +841,7 @@
                 currentUser = userCredential.user;
                 
                 await loadUserProfile();
-                checkLocationAndInitialize();
+                loadTodayAttendance();
                 
                 showMessage('Login berhasil!', 'success');
                 
@@ -814,8 +873,8 @@
                 await firebase.auth().signOut();
                 currentUser = null;
                 isAdmin = false;
-                userLocation = null;
                 todayAttendance = null;
+                currentReportData = null;
                 
                 // Reset form
                 document.getElementById('loginEmail').value = '';
@@ -875,80 +934,6 @@
             }
         }
 
-        // Location Functions
-        function checkLocationAndInitialize() {
-            if (navigator.geolocation) {
-                showMessage('Memverifikasi lokasi...', 'info');
-                
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        userLocation = {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            accuracy: position.coords.accuracy
-                        };
-                        
-                        const distance = calculateDistance(
-                            userLocation.latitude,
-                            userLocation.longitude,
-                            OFFICE_LOCATION.latitude,
-                            OFFICE_LOCATION.longitude
-                        );
-                        
-                        if (distance <= OFFICE_LOCATION.radius || isAdmin) {
-                            document.getElementById('gpsStatus').innerHTML = '✅ Lokasi terverifikasi - Anda berada di area kantor';
-                            enableAttendanceButtons();
-                            loadTodayAttendance();
-                        } else {
-                            document.getElementById('gpsStatus').innerHTML = '❌ Anda berada di luar area kantor';
-                            showMessage('Anda harus berada di area kantor untuk melakukan absensi', 'error');
-                        }
-                    },
-                    function(error) {
-                        console.error('Geolocation error:', error);
-                        
-                        if (isAdmin) {
-                            document.getElementById('gpsStatus').innerHTML = '⚠️ GPS tidak tersedia - Mode admin';
-                            enableAttendanceButtons();
-                            loadTodayAttendance();
-                        } else {
-                            document.getElementById('gpsStatus').innerHTML = '❌ Tidak dapat mengakses lokasi';
-                            showMessage('Izinkan akses lokasi untuk melakukan absensi', 'error');
-                        }
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 300000
-                    }
-                );
-            } else {
-                if (isAdmin) {
-                    document.getElementById('gpsStatus').innerHTML = '⚠️ GPS tidak didukung - Mode admin';
-                    enableAttendanceButtons();
-                    loadTodayAttendance();
-                } else {
-                    document.getElementById('gpsStatus').innerHTML = '❌ GPS tidak didukung browser';
-                    showMessage('Browser tidak mendukung GPS', 'error');
-                }
-            }
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Earth's radius in meters
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
-
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                      Math.cos(φ1) * Math.cos(φ2) *
-                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-            return R * c;
-        }
-
         // Attendance Functions
         async function checkIn() {
             if (!currentUser) {
@@ -981,7 +966,6 @@
                     checkIn: firebase.firestore.FieldValue.serverTimestamp(),
                     checkInTime: timeString,
                     status: status,
-                    location: userLocation,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 
@@ -1091,13 +1075,6 @@
             }
         }
 
-        function enableAttendanceButtons() {
-            if (isAdmin) {
-                document.getElementById('checkinBtn').disabled = false;
-                document.getElementById('checkoutBtn').disabled = false;
-            }
-        }
-
         // History Functions
         async function loadMyHistory() {
             if (!currentUser) return;
@@ -1124,13 +1101,28 @@
                 
                 tbody.innerHTML = '';
                 
+                // Calculate stats
+                let hadir = 0, telat = 0, alpha = 0, izin = 0;
+                const attendanceData = [];
+                
                 if (snapshot.empty) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6c757d;">Tidak ada data absensi</td></tr>';
+                    updateEmployeeStats(0, 0, 0, 0, 0);
                     return;
                 }
                 
                 snapshot.forEach(doc => {
                     const data = doc.data();
+                    attendanceData.push(data);
+                    
+                    // Count stats
+                    switch (data.status) {
+                        case 'hadir': hadir++; break;
+                        case 'telat': telat++; break;
+                        case 'alpha': alpha++; break;
+                        case 'izin': izin++; break;
+                    }
+                    
                     const row = document.createElement('tr');
                     
                     const formatDate = new Date(data.date + 'T00:00:00').toLocaleDateString('id-ID', {
@@ -1151,11 +1143,25 @@
                     tbody.appendChild(row);
                 });
                 
+                // Calculate attendance rate
+                const workingDays = getDaysInMonth(parseInt(year), parseInt(month));
+                const attendanceRate = Math.round(((hadir + telat + izin) / workingDays) * 100);
+                
+                updateEmployeeStats(hadir, telat, alpha, izin, attendanceRate);
+                
             } catch (error) {
                 console.error('Error loading history:', error);
                 document.getElementById('historyTableBody').innerHTML = 
                     '<tr><td colspan="5" style="color: red;">Gagal memuat riwayat</td></tr>';
             }
+        }
+
+        function updateEmployeeStats(hadir, telat, alpha, izin, rate) {
+            document.getElementById('employeeHadirCount').textContent = hadir;
+            document.getElementById('employeeTelatCount').textContent = telat;
+            document.getElementById('employeeAlphaCount').textContent = alpha;
+            document.getElementById('employeeIzinCount').textContent = izin;
+            document.getElementById('employeeAttendanceRate').textContent = rate + '%';
         }
 
         // Admin Functions
@@ -1398,6 +1404,8 @@
             if (!selectedMonth) return;
             
             try {
+                showMessage('Memuat data rekap...', 'info');
+                
                 const [year, month] = selectedMonth.split('-');
                 const startDate = `${year}-${month}-01`;
                 const endDate = `${year}-${month}-31`;
@@ -1405,6 +1413,7 @@
                 // Get all employees
                 const usersSnapshot = await db.collection('users')
                     .where('role', '==', 'employee')
+                    .orderBy('name')
                     .get();
                 
                 // Get attendance for the month
@@ -1424,13 +1433,15 @@
                 
                 // Calculate statistics
                 let totalEmployees = usersSnapshot.size;
-                let totalAttendance = 0;
+                let totalPresent = 0;
                 let totalLate = 0;
                 let totalAbsent = 0;
-                let totalPresent = 0;
+                let totalPermission = 0;
                 
                 const tbody = document.getElementById('reportTableBody');
                 tbody.innerHTML = '';
+                
+                const reportData = [];
                 
                 usersSnapshot.forEach(userDoc => {
                     const user = userDoc.data();
@@ -1443,16 +1454,27 @@
                             case 'hadir': hadir++; totalPresent++; break;
                             case 'telat': telat++; totalLate++; break;
                             case 'alpha': alpha++; totalAbsent++; break;
-                            case 'izin': izin++; break;
+                            case 'izin': izin++; totalPermission++; break;
                         }
                     });
                     
                     const workingDays = getDaysInMonth(parseInt(year), parseInt(month));
                     const attendanceRate = Math.round(((hadir + telat + izin) / workingDays) * 100);
                     
+                    reportData.push({
+                        name: user.name,
+                        email: user.email,
+                        hadir: hadir,
+                        telat: telat,
+                        alpha: alpha,
+                        izin: izin,
+                        attendanceRate: attendanceRate
+                    });
+                    
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td><strong>${user.name}</strong></td>
+                        <td>${user.email}</td>
                         <td>${hadir}</td>
                         <td>${telat}</td>
                         <td>${alpha}</td>
@@ -1463,11 +1485,17 @@
                     tbody.appendChild(row);
                 });
                 
+                // Store report data for export
+                currentReportData = {
+                    month: selectedMonth,
+                    data: reportData
+                };
+                
                 // Update statistics
                 const workingDays = getDaysInMonth(parseInt(year), parseInt(month));
                 const totalPossibleDays = totalEmployees * workingDays;
                 const overallAttendanceRate = totalPossibleDays > 0 ? 
-                    Math.round(((totalPresent + totalLate) / totalPossibleDays) * 100) : 0;
+                    Math.round(((totalPresent + totalLate + totalPermission) / totalPossibleDays) * 100) : 0;
                 
                 document.getElementById('reportStats').innerHTML = `
                     <div class="stat-card">
@@ -1488,9 +1516,112 @@
                     </div>
                 `;
                 
+                showMessage('Data rekap berhasil dimuat', 'success');
+                
             } catch (error) {
                 console.error('Error generating report:', error);
                 showMessage('Gagal membuat laporan', 'error');
+            }
+        }
+
+        // Export Functions
+        function exportMyHistory() {
+            const monthSelector = document.getElementById('historyMonth');
+            const selectedMonth = monthSelector.value;
+            
+            if (!selectedMonth) {
+                showMessage('Pilih bulan terlebih dahulu', 'error');
+                return;
+            }
+            
+            const rows = document.querySelectorAll('#historyTableBody tr');
+            if (rows.length === 0 || rows[0].textContent.includes('Tidak ada data')) {
+                showMessage('Tidak ada data untuk diekspor', 'error');
+                return;
+            }
+            
+            let csvContent = "Tanggal,Check In,Check Out,Status,Keterangan\n";
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 5) {
+                    const rowData = Array.from(cells).map(cell => {
+                        let text = cell.textContent.trim();
+                        // Remove status badge formatting
+                        if (cell.querySelector('.status-badge')) {
+                            text = cell.querySelector('.status-badge').textContent.trim();
+                        }
+                        return `"${text}"`;
+                    }).join(',');
+                    csvContent += rowData + '\n';
+                }
+            });
+            
+            downloadCSV(csvContent, `Riwayat_Absensi_${selectedMonth}.csv`);
+            showMessage('Data berhasil diekspor', 'success');
+        }
+
+        function exportReport() {
+            if (!currentReportData) {
+                showMessage('Tidak ada data rekap untuk diekspor', 'error');
+                return;
+            }
+            
+            let csvContent = "Nama Pegawai,Email,Hadir,Telat,Alpha,Izin,Tingkat Kehadiran\n";
+            
+            currentReportData.data.forEach(item => {
+                csvContent += `"${item.name}","${item.email}",${item.hadir},${item.telat},${item.alpha},${item.izin},"${item.attendanceRate}%"\n`;
+            });
+            
+            downloadCSV(csvContent, `Rekap_Absensi_${currentReportData.month}.csv`);
+            showMessage('Rekap berhasil diekspor', 'success');
+        }
+
+        function exportDailyReport() {
+            const date = document.getElementById('attendanceDate').value;
+            if (!date) {
+                showMessage('Pilih tanggal terlebih dahulu', 'error');
+                return;
+            }
+            
+            const rows = document.querySelectorAll('#adminAttendanceBody tr');
+            if (rows.length === 0 || rows[0].textContent.includes('Pilih tanggal')) {
+                showMessage('Tidak ada data untuk diekspor', 'error');
+                return;
+            }
+            
+            let csvContent = "Nama Pegawai,Check In,Check Out,Status\n";
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    const name = cells[0].textContent.trim();
+                    const checkIn = cells[1].textContent.trim();
+                    const checkOut = cells[2].textContent.trim();
+                    const status = cells[3].querySelector('.status-badge') ? 
+                        cells[3].querySelector('.status-badge').textContent.trim() : 
+                        cells[3].textContent.trim();
+                    
+                    csvContent += `"${name}","${checkIn}","${checkOut}","${status}"\n`;
+                }
+            });
+            
+            downloadCSV(csvContent, `Absensi_${date}.csv`);
+            showMessage('Data harian berhasil diekspor', 'success');
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
         }
 
@@ -1701,7 +1832,8 @@
                     attendanceDateInput.value = today;
                 }
                 
-                console.log('✅ Application initialized');
+                console.log('✅ Application initialized successfully');
+                showMessage('Sistem absensi siap digunakan', 'success');
             }
         }
 
@@ -1726,7 +1858,15 @@
         });
 
         window.addEventListener('offline', function() {
-            showMessage('Koneksi internet terputus', 'error');
+            showMessage('Koneksi internet terputus - Beberapa fitur mungkin tidak tersedia', 'error');
+        });
+
+        // Prevent accidental page refresh
+        window.addEventListener('beforeunload', function(e) {
+            if (currentUser) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
         });
     </script>
 </body>
