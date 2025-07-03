@@ -876,6 +876,9 @@
                 todayAttendance = null;
                 currentReportData = null;
                 
+                // Clear stored data
+                localStorage.removeItem('adminEmail');
+                
                 // Reset form
                 document.getElementById('loginEmail').value = '';
                 document.getElementById('loginPassword').value = '';
@@ -942,6 +945,8 @@
             }
             
             try {
+                showMessage('Memproses check in...', 'info');
+                
                 const now = new Date();
                 const dateKey = now.toISOString().split('T')[0];
                 const timeString = now.toLocaleTimeString('id-ID');
@@ -962,21 +967,23 @@
                 
                 const attendanceData = {
                     userId: currentUser.uid,
+                    userEmail: currentUser.email,
                     date: dateKey,
                     checkIn: firebase.firestore.FieldValue.serverTimestamp(),
                     checkInTime: timeString,
                     status: status,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 
                 await attendanceRef.set(attendanceData, { merge: true });
                 
-                showMessage(`Check in berhasil pada ${timeString}`, 'success');
+                showMessage(`Check in berhasil pada ${timeString} - Status: ${status.toUpperCase()}`, 'success');
                 loadTodayAttendance();
                 
             } catch (error) {
                 console.error('Check in error:', error);
-                showMessage('Gagal melakukan check in', 'error');
+                showMessage(`Gagal melakukan check in: ${error.message}`, 'error');
             }
         }
 
@@ -987,6 +994,8 @@
             }
             
             try {
+                showMessage('Memproses check out...', 'info');
+                
                 const now = new Date();
                 const dateKey = now.toISOString().split('T')[0];
                 const timeString = now.toLocaleTimeString('id-ID');
@@ -1015,14 +1024,19 @@
                 
             } catch (error) {
                 console.error('Check out error:', error);
-                showMessage('Gagal melakukan check out', 'error');
+                showMessage(`Gagal melakukan check out: ${error.message}`, 'error');
             }
         }
 
         async function loadTodayAttendance() {
+            if (!currentUser) return;
+            
             try {
                 const today = new Date().toISOString().split('T')[0];
                 const attendanceRef = db.collection('attendance').doc(`${currentUser.uid}_${today}`);
+                
+                console.log('Loading attendance for:', currentUser.uid, today);
+                
                 const attendanceDoc = await attendanceRef.get();
                 
                 const statusDiv = document.getElementById('attendanceStatus');
@@ -1030,8 +1044,14 @@
                 const checkinBtn = document.getElementById('checkinBtn');
                 const checkoutBtn = document.getElementById('checkoutBtn');
                 
+                if (!statusDiv || !infoDiv || !checkinBtn || !checkoutBtn) {
+                    console.error('Attendance elements not found');
+                    return;
+                }
+                
                 if (attendanceDoc.exists()) {
                     todayAttendance = attendanceDoc.data();
+                    console.log('Today attendance:', todayAttendance);
                     
                     let statusText = '';
                     let infoText = '';
@@ -1039,7 +1059,7 @@
                     if (todayAttendance.checkIn && todayAttendance.checkOut) {
                         statusText = `✅ Check in: ${todayAttendance.checkInTime} | Check out: ${todayAttendance.checkOutTime}`;
                         infoText = `<div class="status-badge status-${todayAttendance.status}">
-                            Status: ${todayAttendance.status.toUpperCase()}
+                            Status: ${todayAttendance.status.toUpperCase()} - Selesai bekerja
                         </div>`;
                         checkinBtn.disabled = true;
                         checkoutBtn.disabled = true;
@@ -1063,6 +1083,7 @@
                     infoDiv.innerHTML = infoText;
                     
                 } else {
+                    console.log('No attendance record for today');
                     statusDiv.innerHTML = '📋 Belum melakukan absensi hari ini';
                     infoDiv.innerHTML = '<p>Silakan lakukan check in untuk memulai absensi</p>';
                     checkinBtn.disabled = false;
@@ -1071,7 +1092,10 @@
                 
             } catch (error) {
                 console.error('Error loading today attendance:', error);
-                document.getElementById('todayAttendanceInfo').innerHTML = '<p style="color: red;">Gagal memuat data absensi</p>';
+                const infoDiv = document.getElementById('todayAttendanceInfo');
+                if (infoDiv) {
+                    infoDiv.innerHTML = `<p style="color: red;">Gagal memuat data absensi: ${error.message}</p>`;
+                }
             }
         }
 
@@ -1183,18 +1207,28 @@
             try {
                 showMessage('Menambahkan pegawai...', 'info');
                 
+                // Store current admin info
+                const adminEmail = currentUser.email;
+                const adminUid = currentUser.uid;
+                
                 // Create user account
                 const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
                 const newUser = userCredential.user;
                 
-                // Add user profile
+                // Add user profile using admin privileges
                 await db.collection('users').doc(newUser.uid).set({
                     name: name,
                     email: email,
                     role: 'employee',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    createdBy: currentUser.uid
+                    createdBy: adminUid
                 });
+                
+                // Sign out the new user and sign back in as admin
+                await firebase.auth().signOut();
+                
+                // Re-authenticate as admin
+                await firebase.auth().signInWithEmailAndPassword(adminEmail, 'admin123'); // Use a default admin password
                 
                 // Clear form
                 document.getElementById('newEmployeeName').value = '';
@@ -1204,9 +1238,6 @@
                 showMessage(`Pegawai ${name} berhasil ditambahkan`, 'success');
                 loadEmployeeList();
                 
-                // Re-authenticate current admin
-                await firebase.auth().signInWithEmailAndPassword(currentUser.email, 'admin_password');
-                
             } catch (error) {
                 console.error('Error adding employee:', error);
                 let errorMessage = 'Gagal menambahkan pegawai';
@@ -1214,10 +1245,22 @@
                 if (error.code === 'auth/email-already-in-use') {
                     errorMessage = 'Email sudah terdaftar';
                 } else if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Password terlalu lemah';
+                    errorMessage = 'Password terlalu lemah (minimal 6 karakter)';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Format email tidak valid';
                 }
                 
                 showMessage(errorMessage, 'error');
+                
+                // Try to re-authenticate as admin if failed
+                try {
+                    const adminEmail = localStorage.getItem('adminEmail');
+                    if (adminEmail) {
+                        await firebase.auth().signInWithEmailAndPassword(adminEmail, 'admin123');
+                    }
+                } catch (reAuthError) {
+                    console.error('Re-auth error:', reAuthError);
+                }
             }
         }
 
@@ -1378,8 +1421,13 @@
             try {
                 const attendanceRef = db.collection('attendance').doc(`${userId}_${date}`);
                 
+                // Get user info for better logging
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userEmail = userDoc.exists() ? userDoc.data().email : 'unknown';
+                
                 await attendanceRef.set({
                     userId: userId,
+                    userEmail: userEmail,
                     date: date,
                     status: newStatus,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1390,7 +1438,7 @@
                 
             } catch (error) {
                 console.error('Error updating attendance status:', error);
-                showMessage('Gagal memperbarui status absensi', 'error');
+                showMessage(`Gagal memperbarui status absensi: ${error.message}`, 'error');
             }
         }
 
